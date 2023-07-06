@@ -2,6 +2,8 @@
 
 The Processor Performance Boost Mode Controller is a Windows desktop application built using C# and WinForms. It provides a graphical user interface (GUI) to easily toggle and control the processor performance boost mode on Windows 10/11. The app allows users to choose from different boost mode settings and applies the selected setting in real-time.
 
+![Screenshot](screenshot.png)
+
 ## Key Features
 
 - Simple and intuitive GUI: The app provides a user-friendly interface with buttons to select various boost mode settings.

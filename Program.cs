@@ -1,7 +1,10 @@
-﻿using System;
+using System;
+using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Xml;
 
 public class MainForm : Form
 {
@@ -9,6 +12,13 @@ public class MainForm : Form
     Label selectLabel;
     Label feedbackLabel;
     string currentBoostMode;
+    string oldBoostMode;
+
+    // Add a field to store the configuration
+    List<(string appName, string boostMode)> config = new List<(string appName, string boostMode)>();
+
+    // Add a field to keep track of whether the configuration file should be used
+    bool useConfigFile = false;
 
     public MainForm()
     {
@@ -16,7 +26,7 @@ public class MainForm : Form
         boostModePanel = new FlowLayoutPanel
         {
             Location = new Point(20, 50),
-            Size = new Size(390, 190),
+            Size = new Size(570, 190),
             FlowDirection = FlowDirection.TopDown
         };
 
@@ -31,7 +41,47 @@ public class MainForm : Form
         CreateBoostModeButton("Efficient Aggressive");
         CreateBoostModeButton("Aggressive At Guaranteed");
         CreateBoostModeButton("Efficient Aggressive At Guaranteed");
-        CreateBoostModeButton("Unlock Processor Performance Boost Mode");
+
+        // Add a button to Unlock Processor Performance Boost Mode
+        Button unlockBoostModeButton = new Button
+        {
+            Text = "Unlock Processor Performance Boost Mode",
+            Size = new Size(180, 40)
+        };
+
+        unlockBoostModeButton.Click += (sender, e) =>
+        {
+            RunCommand("-attributes sub_processor perfboostmode -attrib_hide");
+        };
+
+        boostModePanel.Controls.Add(unlockBoostModeButton);
+
+        // Add a button to toggle the use of the configuration file
+        Button toggleConfigButton = new Button
+        {
+            Text = "Auto Config File",
+            Size = new Size(180, 40),
+            BackColor = SystemColors.Control
+    };
+
+        toggleConfigButton.Click += (sender, e) =>
+        {
+            if (!useConfigFile)
+            {
+                // Load the configuration file and enable the use of the configuration file
+                LoadConfigFile();
+                useConfigFile = true;
+                toggleConfigButton.BackColor = Color.LightCyan;
+                oldBoostMode = currentBoostMode;
+            } else
+            {
+                // Disable the use of the configuration file
+                useConfigFile = false;
+                toggleConfigButton.BackColor = SystemColors.Control;
+            }
+        };
+
+        boostModePanel.Controls.Add(toggleConfigButton);
 
         // Add controls to the form
         Controls.Add(selectLabel);
@@ -47,23 +97,23 @@ public class MainForm : Form
         MinimizeBox = false; // Disable the minimize button
         MaximizeBox = false; // Disable the maximize button
 
-        Opacity = 0.6;
-
-        // Adjust font sizes based on DPI scaling
-        //float scaleFactor = CreateGraphics().DpiX / 96f;
-        //float fontSize = 9f * scaleFactor;
-        //Font = new Font(Font.FontFamily, fontSize);
-        //selectLabel.Font = new Font(Font.FontFamily, fontSize - 4);
-        //boostModePanel.Font = new Font(Font.FontFamily, fontSize - 5);
-        //feedbackLabel.Font = new Font(Font.FontFamily, fontSize - 4);
+        //Opacity = 0.6;
 
         // Get the current boost mode
         currentBoostMode = GetCurrentBoostMode();
         UpdateButtonColors();
+
+        // Create a timer
+        Timer timer = new Timer();
+        timer.Interval = 5000;  // Set the interval to 5 seconds (adjust as needed)
+        timer.Tick += (sender, e) => CheckApplicationAndSetBoostMode();
+        timer.Start();
     }
 
+    // Method to create a boost mode button with the specified text
     void CreateBoostModeButton(string buttonText)
     {
+        // Create a button for each boost mode
         Button boostModeButton = new Button
         {
             Text = buttonText,
@@ -75,42 +125,95 @@ public class MainForm : Form
         boostModePanel.Controls.Add(boostModeButton);
     }
 
+    // Method to load the configuration file and store the configuration in the config list
+    void LoadConfigFile()
+    {
+        // Check if the configuration file exists before loading
+        if (!File.Exists("config.xml"))
+        {
+            MessageBox.Show("Configuration file not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        XmlDocument doc = new XmlDocument();
+        doc.Load("config.xml");
+
+        XmlNodeList applications = doc.DocumentElement.SelectNodes("/Config/Application");
+
+        // Clear the existing configuration
+        config.Clear();
+
+        foreach (XmlNode application in applications)
+        {
+            string appName = application.SelectSingleNode("AppName").InnerText;
+            string boostMode = application.SelectSingleNode("BoostMode").InnerText;
+
+            // Add the application and boost mode to the configuration
+            config.Add((appName, boostMode));
+        }
+    }
+
+    void CheckApplicationAndSetBoostMode()
+    {
+        // Check if the configuration file should be used
+        if (useConfigFile)
+        {
+            foreach (var (appName, boostMode) in config)
+            {
+                Process[] processes = Process.GetProcessesByName(appName);
+
+                // The application is running
+                if (processes.Length > 0)
+                {
+                    // Check if the boost mode is already applied
+                    if (currentBoostMode != boostMode)
+                    {
+                        // The application is running, set the specified boost mode
+                        ApplyBoostMode(boostMode);
+                    }
+                    return;  // Exit the method after applying a boost mode
+                }
+            }
+        }
+
+        // If the configuration file should not be used or no applications from the configuration file are running,
+        // revert back to the old boost mode
+        if (oldBoostMode != currentBoostMode)
+        {
+            ApplyBoostMode(oldBoostMode);
+        }
+    }
+
     void ApplyBoostMode(string boostMode)
     {
-        string selectedOption = boostMode;
         string setting = null;
-        if (selectedOption == "Disabled")
+        if (boostMode == "Disabled")
         {
             setting = "0";
         }
-        else if (selectedOption == "Enabled")
+        else if (boostMode == "Enabled")
         {
             setting = "1";
         }
-        else if (selectedOption == "Aggressive (Default)")
+        else if (boostMode == "Aggressive (Default)")
         {
             setting = "2";
         }
-        else if (selectedOption == "Efficient Enabled")
+        else if (boostMode == "Efficient Enabled")
         {
             setting = "3";
         }
-        else if (selectedOption == "Efficient Aggressive")
+        else if (boostMode == "Efficient Aggressive")
         {
             setting = "4";
         }
-        else if (selectedOption == "Aggressive At Guaranteed")
+        else if (boostMode == "Aggressive At Guaranteed")
         {
             setting = "5";
         }
-        else if (selectedOption == "Efficient Aggressive At Guaranteed")
+        else if (boostMode == "Efficient Aggressive At Guaranteed")
         {
             setting = "6";
-        }
-        else if (selectedOption == "Show Processor Performance Boost Mode")
-        {
-            RunCommand("-attributes sub_processor perfboostmode -attrib_hide");
-            return;
         }
 
         if (setting == null)
@@ -119,10 +222,16 @@ public class MainForm : Form
             return;
         }
 
+        // Run the command to apply the boost mode
         RunCommand("/setacvalueindex scheme_current sub_processor perfboostmode " + setting);
         RunCommand("/setactive scheme_current");
 
+        // Update the current boost mode
         currentBoostMode = GetCurrentBoostMode();
+        if (!useConfigFile)
+            oldBoostMode = currentBoostMode;
+
+        // Update the button colors
         UpdateButtonColors();
         //feedbackLabel.Text = "Done.";
     }
@@ -151,6 +260,7 @@ public class MainForm : Form
 
     string GetCurrentBoostMode()
     {
+        // Run the command to get the current boost mode
         var processStartInfo = new ProcessStartInfo
         {
             FileName = "powercfg",
@@ -164,6 +274,7 @@ public class MainForm : Form
         var process = Process.Start(processStartInfo);
         process.WaitForExit();
 
+        // Parse the output to get the current boost mode
         if (process.ExitCode == 0)
         {
             string output = process.StandardOutput.ReadToEnd();
@@ -212,6 +323,7 @@ public class MainForm : Form
 
     void UpdateButtonColors()
     {
+        // Update the color of each button based on the current boost mode
         foreach (Control control in boostModePanel.Controls)
         {
             if (control is Button button)
@@ -222,7 +334,8 @@ public class MainForm : Form
                 }
                 else
                 {
-                    button.BackColor = SystemColors.Control;
+                    if (button.Text != "Auto Config File")
+                        button.BackColor = SystemColors.Control;
                 }
             }
         }

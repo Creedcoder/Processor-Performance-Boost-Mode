@@ -10,7 +10,7 @@ The Processor Performance Boost Mode Controller is a Windows desktop application
 - Real-time feedback: The app displays a label to provide feedback on the applied boost mode setting.
 - Multilingual support: The app supports multiple languages, allowing users to read out the active boost mode setting in their preferred language.
 - DPI-aware and scalable: The app is designed to be DPI-aware, ensuring proper scaling on different display resolutions and DPI settings.
-- Customizable appearance: Users can modify the app's appearance by adjusting transparency, font sizes, and other visual elements.
+- Auto Config File: Users can create a configuration file (`config.xml`) to automatically apply boost modes based on running applications.
 
 ## Usage
 
@@ -18,6 +18,21 @@ The Processor Performance Boost Mode Controller is a Windows desktop application
 2. Select boost mode: Click on the corresponding button to choose the desired boost mode setting.
 3. Apply the setting: The app applies the selected boost mode setting in real-time.
 4. Feedback: The app displays a label indicating the applied boost mode setting.
+5. Auto Config File: Users can enable or disable the use of a configuration file (`config.xml`) by toggling the "Auto Config File" button. When enabled, the app checks if each application specified in the configuration file is running, and if so, applies the corresponding boost mode. The configuration file should be formatted as follows:
+
+    ```xml
+    <Config>
+        <Application>
+            <AppName>notepad</AppName>
+            <BoostMode>Disabled</BoostMode>
+        </Application>
+        <Application>
+            <AppName>yuzu</AppName>
+            <BoostMode>Aggressive (Default)</BoostMode>
+        </Application>
+        <!-- Add more applications as needed -->
+    </Config>
+    ```
 
 ## Compatibility
 

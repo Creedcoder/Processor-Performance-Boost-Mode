@@ -1,0 +1,28 @@
+<Config>
+	<Application>
+		<AppName>yuzu</AppName>
+		<BoostMode>Aggressive (Default)</BoostMode>
+	</Application>
+	<Application>
+		<AppName>ForzaHorizon5</AppName>
+		<BoostMode>Disabled</BoostMode>
+	</Application>
+	<!--
+	Add more applications as needed
+	only use the .exe name like:
+	
+	<AppName>ForzaHorizon5</AppName>
+	<AppName>VALORANT</AppName>
+	
+	
+	BoostMode Values are:
+	
+	<BoostMode>Disabled</BoostMode>
+	<BoostMode>Enabled</BoostMode>
+	<BoostMode>Aggressive (Default)</BoostMode>
+	<BoostMode>Efficient Enabled</BoostMode>
+	<BoostMode>Efficient Aggressive</BoostMode>
+	<BoostMode>Aggressive At Guaranteed</BoostMode>
+	<BoostMode>Efficient Aggressive At Guaranteed</BoostMode>
+	-->
+</Config>
